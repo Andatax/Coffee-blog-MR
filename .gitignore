@@ -1,0 +1,35 @@
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.suo
+*.user
+*.userprefs
+
+# --- .NET artifacts ---
+**/bin/
+**/obj/
+# If you use EF Migrations or a local SQLite DB:
+*.db
+*.sqlite
+# ASPNET user secrets (dotnet user-secrets)
+secrets.json
+# appsettings.Development often holds local keys
+**/appsettings.Development.json
+
+# --- Node artifacts (frontend/) ---
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+# logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# --- Environment variable files ---
+# (never check in your secrets!)
+.env
+.env.*.local
