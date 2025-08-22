@@ -1,13 +1,96 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Coffee Recipe Blog</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+	</head>
+	<body class="font-sans antialiased bg-gray-50 text-gray-900">
+		<!-- Header Component -->
+		<header class="bg-white shadow p-4 flex items-center justify-between">
+			<button id="menu-toggle" aria-label="Open navigation" class="focus:outline-none">
+				<!-- Hamburger icon -->
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="w-6 h-6"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M4 6h16M4 12h16M4 18h16"
+					/>
+				</svg>
+			</button>
+			<h1 class="text-xl font-semibold">Coffee Recipes</h1>
+		</header>
+
+		<!-- MobileNav Component -->
+		<nav
+			id="mobile-nav"
+			class="fixed inset-0 bg-black bg-opacity-50 transform -translate-x-full transition-transform"
+		>
+			<div class="bg-white w-64 h-full p-6 flex flex-col">
+				<button id="menu-close" aria-label="Close navigation" class="mb-8 self-end focus:outline-none">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="w-6 h-6"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
+				<ul class="space-y-4">
+					<li><a href="/recipes" class="text-lg font-medium hover:text-yellow-600">Recipes</a></li>
+					<li><a href="/grinder" class="text-lg font-medium hover:text-yellow-600">Grinder</a></li>
+					<li><a href="/coffees" class="text-lg font-medium hover:text-yellow-600">Coffees</a></li>
+					<li><a href="/roasteries" class="text-lg font-medium hover:text-yellow-600">Roasteries</a></li>
+					<li><a href="/brewers" class="text-lg font-medium hover:text-yellow-600">Brewers</a></li>
+				</ul>
+			</div>
+		</nav>
+
+		<!-- Hero Component -->
+		<section class="p-6 text-center">
+			<h2 class="text-2xl font-bold mb-4">Discover the Best Coffee Recipes</h2>
+			<p class="mb-6">Explore brewing techniques, grinder reviews, and roasteries around the world.</p>
+			<a href="/recipes" class="inline-block bg-yellow-500 text-white px-4 py-2 rounded">
+				Browse Recipes
+			</a>
+		</section>
+
+		<!-- Features Component -->
+		<section class="p-6 grid gap-6">
+			<!-- Example Feature Card -->
+			<div class="bg-white rounded-lg shadow p-4">
+				<h3 class="font-semibold mb-2">Recipe of the Week</h3>
+				<p class="text-sm">Learn how to brew a perfect pour-over step by step.</p>
+			</div>
+			<!-- Duplicate / customize for other highlights -->
+		</section>
+
+		<!-- Footer Component -->
+		<footer class="p-6 text-center text-sm text-gray-600">&copy; 2025 Coffee Recipe Blog</footer>
+
+		<!-- Menu Toggle Script -->
+		<script>
+			const menuToggle = document.getElementById("menu-toggle");
+			const mobileNav = document.getElementById("mobile-nav");
+			const menuClose = document.getElementById("menu-close");
+
+			menuToggle.addEventListener("click", () => mobileNav.classList.remove("-translate-x-full"));
+			menuClose.addEventListener("click", () => mobileNav.classList.add("-translate-x-full"));
+		</script>
+	</body>
 </html>
