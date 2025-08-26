@@ -2,7 +2,7 @@ import * as THREE from "three";
 export interface Displacement {
 	canvas: HTMLCanvasElement;
 	context: CanvasRenderingContext2D;
-	glowImage: HTMLImageElement;
+	glowImage: HTMLImageElement & { loaded?: boolean };
 	interactivePlane: THREE.Mesh;
 	raycaster: THREE.Raycaster;
 	screenCursor: THREE.Vector2;

@@ -1,30 +1,27 @@
-import React, { useRef, useEffect } from "react";
-import { useThreeScene } from "./hooks/useThreeScene";
+import { useEffect } from "react";
+import type { RefObject } from "react";
+import * as THREE from "three";
+import { useResize } from "./useResize";
+import { useAnimation } from "./useAnimation";
+import { initializeScene } from "../../../lib/threejs/scenes/coffeeScene/sceneManager";
+import type { ThreeSceneState } from "../../../lib/threejs/scenes/coffeeScene/sceneManager";
 
-interface ThreeSceneProps {
-	className?: string;
-	style?: React.CSSProperties;
-}
+export const useThreeScene = (canvasRef: RefObject<HTMLCanvasElement | null>) => {
+	useEffect(() => {
+		if (!canvasRef.current) return;
 
-export const ThreeScene: React.FC<ThreeSceneProps> = ({ className = "", style = {} }) => {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
+		// Initialize the Three.js scene
+		const sceneState = initializeScene(canvasRef.current);
 
-	// Custom hook handles all Three.js logic
-	useThreeScene(canvasRef);
+		// Cleanup function
+		return () => {
+			sceneState.cleanup();
+		};
+	}, [canvasRef]);
 
-	return (
-		<div className={`threejs-container ${className}`} style={style}>
-			<canvas
-				ref={canvasRef}
-				className="webgl"
-				style={{
-					display: "block",
-					width: "100%",
-					height: "100%",
-				}}
-			/>
-		</div>
-	);
+	// Setup resize handling
+	useResize(canvasRef);
+
+	// Setup animation loop
+	useAnimation(canvasRef);
 };
-
-export default ThreeScene;

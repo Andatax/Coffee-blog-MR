@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from "react";
-import { useThreeScene } from "./hooks/useThreeScene";
+import React, { useRef } from "react";
+import { useThreeScene } from "./hooks/useThreeJsScene";
 
 interface ThreeSceneProps {
 	className?: string;
@@ -7,7 +7,7 @@ interface ThreeSceneProps {
 }
 
 export const ThreeScene: React.FC<ThreeSceneProps> = ({ className = "", style = {} }) => {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
 	// Custom hook handles all Three.js logic
 	useThreeScene(canvasRef);

@@ -35,10 +35,13 @@ void main()
     // Picture
     float pictureIntensity = texture(uPictureTexture, uv).r;
 
-    // Point size
-    gl_PointSize = 0.15 * pictureIntensity * uResolution.y;
+    // Point size - smaller for refined coffee bean
+    gl_PointSize = 0.3 * pictureIntensity * uResolution.y;
     gl_PointSize *= (1.0 / - viewPosition.z);
+    
+    // Minimum size for visibility
+    gl_PointSize = max(gl_PointSize, 1.0);
 
-    // Varyings
+    // Final: Show only coffee bean particles
     vColor = vec3(pow(pictureIntensity, 2.0));
 }

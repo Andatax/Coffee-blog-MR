@@ -10,21 +10,37 @@ export function createDisplacement(): Displacement {
 	displacement.canvas = document.createElement("canvas");
 	displacement.canvas.width = 128;
 	displacement.canvas.height = 128;
-	displacement.canvas.style.position = "fixed";
-	displacement.canvas.style.width = "256px";
-	displacement.canvas.style.height = "256px";
-	displacement.canvas.style.top = "0";
-	displacement.canvas.style.left = "0";
-	displacement.canvas.style.zIndex = "10";
+	// Hide the debug canvas completely
+	displacement.canvas.style.display = "none";
+	// Still append to DOM but hidden
 	document.body.append(displacement.canvas);
 
 	// Context
 	displacement.context = displacement.canvas.getContext("2d")!;
 	displacement.context.fillRect(0, 0, displacement.canvas.width, displacement.canvas.height);
 
-	// Glow image
+	// Glow image - create programmatically since glow.png doesn't exist
 	displacement.glowImage = new Image();
-	displacement.glowImage.src = "./glow.png";
+	displacement.glowImage.loaded = false;
+	
+	// Create a simple radial gradient glow programmatically
+	const glowCanvas = document.createElement('canvas');
+	glowCanvas.width = 64;
+	glowCanvas.height = 64;
+	const glowCtx = glowCanvas.getContext('2d')!;
+	
+	const gradient = glowCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+	gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+	gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+	
+	glowCtx.fillStyle = gradient;
+	glowCtx.fillRect(0, 0, 64, 64);
+	
+	displacement.glowImage.onload = () => {
+		displacement.glowImage.loaded = true;
+	};
+	
+	displacement.glowImage.src = glowCanvas.toDataURL();
 
 	// Interactive plane
 	displacement.interactivePlane = new THREE.Mesh(
@@ -78,16 +94,19 @@ export function updateDisplacement(displacement: Displacement, camera: THREE.Cam
 	displacement.canvasCursorPrevious.copy(displacement.canvasCursor);
 	const alpha = Math.min(cursorDistance * 0.05, 1);
 
-	const glowSize = displacement.canvas.width * 0.25;
-	displacement.context.globalCompositeOperation = "lighten";
-	displacement.context.globalAlpha = alpha;
-	displacement.context.drawImage(
-		displacement.glowImage,
-		displacement.canvasCursor.x - glowSize * 0.5,
-		displacement.canvasCursor.y - glowSize * 0.5,
-		glowSize,
-		glowSize
-	);
+	// Only draw if the image is loaded and ready
+	if (displacement.glowImage.loaded && displacement.glowImage.complete) {
+		const glowSize = displacement.canvas.width * 0.25;
+		displacement.context.globalCompositeOperation = "lighten";
+		displacement.context.globalAlpha = alpha;
+		displacement.context.drawImage(
+			displacement.glowImage,
+			displacement.canvasCursor.x - glowSize * 0.5,
+			displacement.canvasCursor.y - glowSize * 0.5,
+			glowSize,
+			glowSize
+		);
+	}
 
 	displacement.texture.needsUpdate = true;
 }

@@ -1,14 +1,16 @@
 import * as THREE from "three";
-import particlesVertexShader from "../../shaders/particles/vertex.glsl";
-import particlesFragmentShader from "../../shaders/particles/fragment.glsl";
+import particlesVertexShader from "./shaders/particles/vertex.glsl";
+import particlesFragmentShader from "./shaders/particles/fragment.glsl";
 import { sizes } from "./utils/sizes";
 import { scene } from "./scenes/coffeeScene/scene";
 import type { Displacement } from "./utils/types";
+import coffeeImageUrl from "../../assets/coffeeRedChannel.png";
 
 export function createParticles(
 	textureLoader: THREE.TextureLoader,
 	displacement: Displacement
 ): { particles: THREE.Points; material: THREE.ShaderMaterial } {
+	// Use the same geometry setup as the working version
 	const particlesGeometry = new THREE.PlaneGeometry(10, 10, 128, 128);
 	particlesGeometry.setIndex(null);
 	particlesGeometry.deleteAttribute("normal");
@@ -24,6 +26,13 @@ export function createParticles(
 	particlesGeometry.setAttribute("aIntensity", new THREE.BufferAttribute(intensitiesArray, 1));
 	particlesGeometry.setAttribute("aAngle", new THREE.BufferAttribute(anglesArray, 1));
 
+	// Create initial placeholder texture
+	const placeholderTexture = new THREE.DataTexture(
+		new Uint8Array([0, 0, 0, 255]), // Black pixel initially
+		1, 1, THREE.RGBAFormat
+	);
+	placeholderTexture.needsUpdate = true;
+
 	const particlesMaterial = new THREE.ShaderMaterial({
 		vertexShader: particlesVertexShader,
 		fragmentShader: particlesFragmentShader,
@@ -31,11 +40,25 @@ export function createParticles(
 			uResolution: new THREE.Uniform(
 				new THREE.Vector2(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)
 			),
-			uPictureTexture: new THREE.Uniform(textureLoader.load("../../../../static/coffeeRedChannel.png")),
+			uPictureTexture: new THREE.Uniform(placeholderTexture),
 			uDisplacementTexture: new THREE.Uniform(displacement.texture),
 		},
 		blending: THREE.AdditiveBlending,
 	});
+
+	// Load the actual coffee texture
+	textureLoader.load(
+		coffeeImageUrl,
+		(texture) => {
+			console.log("Coffee texture loaded successfully!", texture);
+			particlesMaterial.uniforms.uPictureTexture.value = texture;
+			particlesMaterial.uniformsNeedUpdate = true;
+		},
+		undefined,
+		(error) => {
+			console.error("Coffee texture failed to load:", error);
+		}
+	);
 
 	const particles = new THREE.Points(particlesGeometry, particlesMaterial);
 	scene.add(particles);
