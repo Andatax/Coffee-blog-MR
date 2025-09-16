@@ -29,7 +29,9 @@ export function createParticles(
 	// Create initial placeholder texture
 	const placeholderTexture = new THREE.DataTexture(
 		new Uint8Array([0, 0, 0, 255]), // Black pixel initially
-		1, 1, THREE.RGBAFormat
+		1,
+		1,
+		THREE.RGBAFormat
 	);
 	placeholderTexture.needsUpdate = true;
 
@@ -49,14 +51,14 @@ export function createParticles(
 	// Load the actual coffee texture
 	textureLoader.load(
 		coffeeImageUrl,
-		(texture) => {
-			console.log("Coffee texture loaded successfully!", texture);
+		texture => {
+			// console.log("texture loaded ", texture);
 			particlesMaterial.uniforms.uPictureTexture.value = texture;
 			particlesMaterial.uniformsNeedUpdate = true;
 		},
 		undefined,
-		(error) => {
-			console.error("Coffee texture failed to load:", error);
+		error => {
+			console.error("texture failed to load:", error);
 		}
 	);
 

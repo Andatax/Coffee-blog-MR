@@ -12,7 +12,7 @@ void main()
     // Displacement
     vec3 newPosition = position;
     float displacementIntensity = texture(uDisplacementTexture, uv).r;
-    displacementIntensity = smoothstep(0.1, 0.3, displacementIntensity);
+    displacementIntensity = smoothstep(0.1, 0.9, displacementIntensity);
 
     vec3 displacement = vec3(
         cos(aAngle) * 0.2,
@@ -37,11 +37,11 @@ void main()
 
     // Point size - smaller for refined coffee bean
     gl_PointSize = 0.3 * pictureIntensity * uResolution.y;
-    gl_PointSize *= (1.0 / - viewPosition.z);
+    gl_PointSize *= (0.7 / - viewPosition.z);
     
     // Minimum size for visibility
-    gl_PointSize = max(gl_PointSize, 1.0);
+    gl_PointSize = max(gl_PointSize, 0.5);
 
     // Final: Show only coffee bean particles
-    vColor = vec3(pow(pictureIntensity, 2.0));
+    vColor = vec3(1.0, 0.12, 0.0) * pow(pictureIntensity, 0.3);
 }

@@ -4,5 +4,6 @@ import { camera } from "./camera";
 export function createControls(canvas: HTMLElement): OrbitControls {
 	const controls = new OrbitControls(camera, canvas);
 	controls.enableDamping = true;
+	controls.enableZoom = false;
 	return controls;
 }

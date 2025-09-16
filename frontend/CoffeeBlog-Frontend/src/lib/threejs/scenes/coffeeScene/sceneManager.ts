@@ -1,11 +1,10 @@
 import * as THREE from "three";
-import { sizes, updateSizes } from "../../utils/sizes";
 import { scene } from "./scene";
-import { camera, updateCamera } from "../../camera";
-import { createRenderer, updateRenderer } from "../../render";
+import { camera } from "../../camera";
+import { createRenderer } from "../../render";
 import { createControls } from "../../controls";
-import { createDisplacement, setupDisplacementEvents, updateDisplacement } from "../../displacement";
-import { createParticles, updateParticlesMaterial } from "../../particles";
+import { createDisplacement, setupDisplacementEvents } from "../../displacement";
+import { createParticles } from "../../particles";
 import { textureLoader } from "../../loader/textureLoader";
 import type { Displacement } from "../../utils/types";
 
