@@ -1,0 +1,540 @@
+// types/recipe.types.ts
+// Clean interface definitions - no complex state management needed here
+export interface Recipe {
+	id: string;
+	name: string;
+	description: string;
+	brewtime: number;
+	brewer: string;
+	grinder: string;
+	coffee: string;
+}
+
+export interface CreateRecipeRequest {
+	name: string;
+	description: string;
+	brewtime: number;
+	brewer: string;
+	grinder: string;
+	coffee: string;
+}
+
+// store/recipes/types.ts
+// Simple state shape - notice no loading/error states in Redux
+export interface RecipesState {
+	recipes: Recipe[];
+	// That's it! The hooks handle loading and errors
+}
+
+// store/recipes/successReducers.ts
+// Pure data manipulation - these reducers only handle successful operations
+import type { PayloadAction } from "@reduxjs/toolkit";
+import type { Recipe } from "../../types/recipe.types";
+import type { RecipesState } from "./types";
+
+export const successReducers = {
+	// Set entire recipe collection (used after fetching)
+	setRecipes: (state: RecipesState, action: PayloadAction<Recipe[]>) => {
+		state.recipes = action.payload;
+	},
+
+	// Add a single recipe (used after creation)
+	addRecipe: (state: RecipesState, action: PayloadAction<Recipe>) => {
+		state.recipes.push(action.payload);
+	},
+
+	// Update an existing recipe (used after editing)
+	updateRecipe: (state: RecipesState, action: PayloadAction<Recipe>) => {
+		const index = state.recipes.findIndex(recipe => recipe.id === action.payload.id);
+		if (index !== -1) {
+			state.recipes[index] = action.payload;
+		}
+	},
+
+	// Remove a recipe (used after deletion)
+	removeRecipe: (state: RecipesState, action: PayloadAction<string>) => {
+		state.recipes = state.recipes.filter(recipe => recipe.id !== action.payload);
+	},
+
+	// Add multiple recipes at once (useful for bulk operations)
+	addMultipleRecipes: (state: RecipesState, action: PayloadAction<Recipe[]>) => {
+		state.recipes.push(...action.payload);
+	},
+
+	// Update multiple recipes at once (useful for bulk edits)
+	updateMultipleRecipes: (state: RecipesState, action: PayloadAction<Recipe[]>) => {
+		action.payload.forEach(updatedRecipe => {
+			const index = state.recipes.findIndex(recipe => recipe.id === updatedRecipe.id);
+			if (index !== -1) {
+				state.recipes[index] = updatedRecipe;
+			}
+		});
+	},
+};
+
+// store/recipes/errorReducers.ts
+// Handle error recovery and cleanup scenarios
+import type { PayloadAction } from "@reduxjs/toolkit";
+import type { RecipesState } from "./types";
+
+export const errorReducers = {
+	// Clear all recipes (used when there's a critical error or user logs out)
+	clearAllRecipes: (state: RecipesState) => {
+		state.recipes = [];
+	},
+
+	// Remove recipes that failed validation (useful for cleanup)
+	removeInvalidRecipes: (state: RecipesState, action: PayloadAction<string[]>) => {
+		const invalidIds = new Set(action.payload);
+		state.recipes = state.recipes.filter(recipe => !invalidIds.has(recipe.id));
+	},
+
+	// Restore recipes from a backup (useful for error recovery)
+	restoreRecipes: (state: RecipesState, action: PayloadAction<Recipe[]>) => {
+		state.recipes = action.payload;
+	},
+
+	// Reset to initial state (useful for complete reset scenarios)
+	resetToInitialState: (state: RecipesState) => {
+		state.recipes = [];
+	},
+};
+
+// store/recipes/utilityReducers.ts
+// General utility operations that don't fit success/error categories
+import type { PayloadAction } from "@reduxjs/toolkit";
+import type { Recipe } from "../../types/recipe.types";
+import type { RecipesState } from "./types";
+
+export const utilityReducers = {
+	// Sort recipes by different criteria
+	sortRecipesByName: (state: RecipesState) => {
+		state.recipes.sort((a, b) => a.name.localeCompare(b.name));
+	},
+
+	sortRecipesByBrewTime: (state: RecipesState) => {
+		state.recipes.sort((a, b) => a.brewtime - b.brewtime);
+	},
+
+	// Filter operations (though you might prefer to do this in selectors)
+	keepOnlyFavorites: (state: RecipesState, action: PayloadAction<string[]>) => {
+		const favoriteIds = new Set(action.payload);
+		state.recipes = state.recipes.filter(recipe => favoriteIds.has(recipe.id));
+	},
+
+	// Duplicate a recipe with a new ID
+	duplicateRecipe: (
+		state: RecipesState,
+		action: PayloadAction<{ originalId: string; newRecipe: Recipe }>
+	) => {
+		const { originalId, newRecipe } = action.payload;
+		const originalIndex = state.recipes.findIndex(recipe => recipe.id === originalId);
+		if (originalIndex !== -1) {
+			// Insert the duplicate right after the original
+			state.recipes.splice(originalIndex + 1, 0, newRecipe);
+		}
+	},
+};
+
+// store/recipes/index.ts
+// The main slice that combines all the focused reducers
+import { createSlice } from "@reduxjs/toolkit";
+import type { RecipesState } from "./types";
+import { successReducers } from "./successReducers";
+import { errorReducers } from "./errorReducers";
+import { utilityReducers } from "./utilityReducers";
+
+const initialState: RecipesState = {
+	recipes: [],
+};
+
+const recipesSlice = createSlice({
+	name: "recipes",
+	initialState,
+	reducers: {
+		// Combine all our specialized reducers
+		...successReducers,
+		...errorReducers,
+		...utilityReducers,
+	},
+});
+
+// Export actions grouped by category for easier imports
+export const {
+	// Success operations
+	setRecipes,
+	addRecipe,
+	updateRecipe,
+	removeRecipe,
+	addMultipleRecipes,
+	updateMultipleRecipes,
+
+	// Error handling operations
+	clearAllRecipes,
+	removeInvalidRecipes,
+	restoreRecipes,
+	resetToInitialState,
+
+	// Utility operations
+	sortRecipesByName,
+	sortRecipesByBrewTime,
+	keepOnlyFavorites,
+	duplicateRecipe,
+} = recipesSlice.actions;
+
+export default recipesSlice.reducer;
+
+// hooks/useRecipesData.ts
+// Custom hook that handles fetching and manages its own async state
+import { useState, useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "../store";
+import { setRecipes, clearAllRecipes } from "../store/recipes";
+import type { Recipe } from "../types/recipe.types";
+
+export const useRecipesData = () => {
+	// Hook manages its own async states
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
+
+	const dispatch = useDispatch();
+
+	// Get data from Redux (Redux only stores the actual data)
+	const recipes = useSelector((state: RootState) => state.recipes.recipes);
+
+	const fetchRecipes = useCallback(
+		async (force = false) => {
+			// Simple caching - don't refetch if we have recent data
+			const now = Date.now();
+			const fiveMinutesAgo = now - 5 * 60 * 1000;
+
+			if (!force && lastFetchTime && lastFetchTime > fiveMinutesAgo) {
+				return; // Data is fresh enough
+			}
+
+			setIsLoading(true);
+			setError(null);
+
+			try {
+				const response = await fetch("/api/recipes");
+
+				if (!response.ok) {
+					throw new Error(`Failed to fetch recipes: ${response.statusText}`);
+				}
+
+				const fetchedRecipes: Recipe[] = await response.json();
+
+				// Tell Redux about the successful fetch
+				dispatch(setRecipes(fetchedRecipes));
+				setLastFetchTime(now);
+			} catch (err) {
+				const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+				setError(errorMessage);
+
+				// On critical errors, might want to clear existing data
+				if (err instanceof Error && err.message.includes("unauthorized")) {
+					dispatch(clearAllRecipes());
+				}
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[dispatch, lastFetchTime]
+	);
+
+	// Auto-fetch on mount if no data exists
+	useEffect(() => {
+		if (recipes.length === 0 && !isLoading && !error) {
+			fetchRecipes();
+		}
+	}, [recipes.length, isLoading, error, fetchRecipes]);
+
+	return {
+		recipes, // Data from Redux store
+		isLoading, // Loading state from hook
+		error, // Error state from hook
+		refetch: () => fetchRecipes(true), // Force refresh
+		clearError: () => setError(null), // Clear error state
+	};
+};
+
+// hooks/useRecipeOperations.ts
+// Custom hook for create/update/delete operations
+import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { addRecipe, updateRecipe, removeRecipe } from "../store/recipes";
+import type { Recipe, CreateRecipeRequest } from "../types/recipe.types";
+
+export const useRecipeOperations = () => {
+	// Each operation gets its own state management
+	const [isCreating, setIsCreating] = useState(false);
+	const [createError, setCreateError] = useState<string | null>(null);
+
+	const [updatingRecipes, setUpdatingRecipes] = useState<Set<string>>(new Set());
+	const [updateError, setUpdateError] = useState<string | null>(null);
+
+	const [deletingRecipes, setDeletingRecipes] = useState<Set<string>>(new Set());
+	const [deleteError, setDeleteError] = useState<string | null>(null);
+
+	const dispatch = useDispatch();
+
+	const createRecipe = async (recipeData: CreateRecipeRequest): Promise<Recipe | null> => {
+		setIsCreating(true);
+		setCreateError(null);
+
+		try {
+			const response = await fetch("/api/recipes", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(recipeData),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+				throw new Error(errorData.message || `HTTP ${response.status}`);
+			}
+
+			const newRecipe: Recipe = await response.json();
+
+			// Tell Redux about the successful creation
+			dispatch(addRecipe(newRecipe));
+
+			return newRecipe;
+		} catch (err) {
+			const errorMessage = err instanceof Error ? err.message : "Failed to create recipe";
+			setCreateError(errorMessage);
+			return null;
+		} finally {
+			setIsCreating(false);
+		}
+	};
+
+	const editRecipe = async (recipeId: string, updates: Partial<Recipe>): Promise<boolean> => {
+		setUpdatingRecipes(prev => new Set(prev).add(recipeId));
+		setUpdateError(null);
+
+		try {
+			const response = await fetch(`/api/recipes/${recipeId}`, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(updates),
+			});
+
+			if (!response.ok) {
+				throw new Error(`Failed to update recipe: ${response.statusText}`);
+			}
+
+			const updatedRecipe: Recipe = await response.json();
+
+			// Tell Redux about the successful update
+			dispatch(updateRecipe(updatedRecipe));
+
+			return true;
+		} catch (err) {
+			const errorMessage = err instanceof Error ? err.message : "Failed to update recipe";
+			setUpdateError(errorMessage);
+			return false;
+		} finally {
+			setUpdatingRecipes(prev => {
+				const newSet = new Set(prev);
+				newSet.delete(recipeId);
+				return newSet;
+			});
+		}
+	};
+
+	const deleteRecipe = async (recipeId: string): Promise<boolean> => {
+		setDeletingRecipes(prev => new Set(prev).add(recipeId));
+		setDeleteError(null);
+
+		try {
+			const response = await fetch(`/api/recipes/${recipeId}`, {
+				method: "DELETE",
+			});
+
+			if (!response.ok) {
+				throw new Error(`Failed to delete recipe: ${response.statusText}`);
+			}
+
+			// Tell Redux about the successful deletion
+			dispatch(removeRecipe(recipeId));
+
+			return true;
+		} catch (err) {
+			const errorMessage = err instanceof Error ? err.message : "Failed to delete recipe";
+			setDeleteError(errorMessage);
+			return false;
+		} finally {
+			setDeletingRecipes(prev => {
+				const newSet = new Set(prev);
+				newSet.delete(recipeId);
+				return newSet;
+			});
+		}
+	};
+
+	return {
+		// Create operations
+		createRecipe,
+		isCreating,
+		createError,
+		clearCreateError: () => setCreateError(null),
+
+		// Update operations
+		editRecipe,
+		isUpdating: (recipeId: string) => updatingRecipes.has(recipeId),
+		updateError,
+		clearUpdateError: () => setUpdateError(null),
+
+		// Delete operations
+		deleteRecipe,
+		isDeleting: (recipeId: string) => deletingRecipes.has(recipeId),
+		deleteError,
+		clearDeleteError: () => setDeleteError(null),
+	};
+};
+
+// components/RecipeManager.tsx
+// Example component showing how to integrate both hooks
+import React, { useState } from "react";
+import { useRecipesData } from "../hooks/useRecipesData";
+import { useRecipeOperations } from "../hooks/useRecipeOperations";
+import type { CreateRecipeRequest } from "../types/recipe.types";
+
+export const RecipeManager: React.FC = () => {
+	// Use data hook for fetching and displaying
+	const { recipes, isLoading, error, refetch, clearError } = useRecipesData();
+
+	// Use operations hook for create/update/delete
+	const { createRecipe, isCreating, createError, deleteRecipe, isDeleting, deleteError } =
+		useRecipeOperations();
+
+	// Component manages its own form state
+	const [newRecipe, setNewRecipe] = useState<CreateRecipeRequest>({
+		name: "",
+		description: "",
+		brewtime: 0,
+		brewer: "",
+		grinder: "",
+		coffee: "",
+	});
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		const result = await createRecipe(newRecipe);
+		if (result) {
+			// Reset form on success
+			setNewRecipe({
+				name: "",
+				description: "",
+				brewtime: 0,
+				brewer: "",
+				grinder: "",
+				coffee: "",
+			});
+		}
+	};
+
+	const handleDelete = async (recipeId: string) => {
+		const confirmed = window.confirm("Are you sure you want to delete this recipe?");
+		if (confirmed) {
+			await deleteRecipe(recipeId);
+		}
+	};
+
+	if (isLoading) {
+		return <div>Loading your recipes...</div>;
+	}
+
+	return (
+		<div>
+			<h1>Recipe Manager</h1>
+
+			{/* Error handling from data fetching */}
+			{error && (
+				<div style={{ backgroundColor: "#ffebee", padding: "12px", marginBottom: "16px" }}>
+					<p>Error loading recipes: {error}</p>
+					<button onClick={clearError}>Dismiss</button>
+					<button onClick={refetch}>Try Again</button>
+				</div>
+			)}
+
+			{/* Error handling from operations */}
+			{createError && (
+				<div style={{ backgroundColor: "#fff3e0", padding: "12px", marginBottom: "16px" }}>
+					<p>Error creating recipe: {createError}</p>
+				</div>
+			)}
+
+			{deleteError && (
+				<div style={{ backgroundColor: "#fff3e0", padding: "12px", marginBottom: "16px" }}>
+					<p>Error deleting recipe: {deleteError}</p>
+				</div>
+			)}
+
+			{/* Create recipe form */}
+			<form onSubmit={handleSubmit} style={{ marginBottom: "24px" }}>
+				<h2>Add New Recipe</h2>
+				<input
+					type="text"
+					placeholder="Recipe name"
+					value={newRecipe.name}
+					onChange={e => setNewRecipe(prev => ({ ...prev, name: e.target.value }))}
+					required
+				/>
+				<textarea
+					placeholder="Description"
+					value={newRecipe.description}
+					onChange={e => setNewRecipe(prev => ({ ...prev, description: e.target.value }))}
+					required
+				/>
+				<input
+					type="number"
+					placeholder="Brew time (minutes)"
+					value={newRecipe.brewtime || ""}
+					onChange={e => setNewRecipe(prev => ({ ...prev, brewtime: parseInt(e.target.value) || 0 }))}
+					required
+				/>
+				<button type="submit" disabled={isCreating}>
+					{isCreating ? "Creating..." : "Add Recipe"}
+				</button>
+			</form>
+
+			{/* Recipe list */}
+			<div>
+				<h2>Your Recipes ({recipes.length})</h2>
+				{recipes.map(recipe => (
+					<div
+						key={recipe.id}
+						style={{
+							border: "1px solid #ddd",
+							padding: "16px",
+							marginBottom: "12px",
+							opacity: isDeleting(recipe.id) ? 0.5 : 1,
+						}}
+					>
+						<h3>{recipe.name}</h3>
+						<p>{recipe.description}</p>
+						<p>Brew time: {recipe.brewtime} minutes</p>
+						<p>Brewer: {recipe.brewer}</p>
+
+						<button
+							onClick={() => handleDelete(recipe.id)}
+							disabled={isDeleting(recipe.id)}
+							style={{
+								backgroundColor: "#f44336",
+								color: "white",
+								border: "none",
+								padding: "8px 16px",
+								cursor: isDeleting(recipe.id) ? "not-allowed" : "pointer",
+							}}
+						>
+							{isDeleting(recipe.id) ? "Deleting..." : "Delete"}
+						</button>
+					</div>
+				))}
+			</div>
+		</div>
+	);
+};
