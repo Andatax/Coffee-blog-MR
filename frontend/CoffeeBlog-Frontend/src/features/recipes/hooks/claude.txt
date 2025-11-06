@@ -399,7 +399,7 @@ export const useRecipeOperations = () => {
 // Example component showing how to integrate both hooks
 import React, { useState } from "react";
 import { useRecipesData } from "../hooks/useRecipesData";
-import { useRecipeOperations } from "../hooks/useRecipeOperations";
+import { useRecipeOperations } from "./useRecipeOperations";
 import type { CreateRecipeRequest } from "../types/recipe.types";
 
 export const RecipeManager: React.FC = () => {
