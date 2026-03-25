@@ -2,7 +2,7 @@ import React from "react";
 import { CoffeeBeanScene } from "../three/CoffeeBeanScene";
 import { LoadingAnimation } from "../three/LoadingAnimation";
 import { Hero } from "../sections/Hero";
-import { Mission } from "../sections/mission/mission";
+import { Mission } from "../../Components/sections/mission/mission";
 import { Story } from "../sections/Story";
 import { Features } from "../sections/Features";
 import { Testimonials } from "../sections/Testimonials";
@@ -27,7 +27,6 @@ export const LandingPage: React.FC = () => {
 			<CoffeeBeanScene />
 
 			<div className="relative z-10">
-				
 				<Hero />
 				<Mission />
 				<Story />

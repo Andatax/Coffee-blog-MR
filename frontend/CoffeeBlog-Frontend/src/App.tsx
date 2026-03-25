@@ -1,10 +1,8 @@
 import { useState } from "react";
 import "./App.css";
-import ThreeScene from "./Components/coffeeBeanScene/coffeeScene";
+import ThreeScene from "./features/coffeeBeanScene/coffeeScene";
 
 function App() {
-	
-
 	return (
 		<>
 			<ThreeScene

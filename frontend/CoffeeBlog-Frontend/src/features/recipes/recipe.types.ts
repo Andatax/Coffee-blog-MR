@@ -6,6 +6,7 @@ export interface Recipe {
 	brewer: string;
 	grinder: string;
 	coffee: string;
+	likes:number;
 }
 
 export interface CreateRecipeRequest {

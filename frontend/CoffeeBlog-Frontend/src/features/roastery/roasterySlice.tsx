@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Roastery, RoasteryState } from "./interfaces";
+import type { Roastery, RoasteryState } from "./roastery.types";
 
 const initialState: RoasteryState = {
 	roastery: null,
